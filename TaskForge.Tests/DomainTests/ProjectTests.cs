@@ -1,7 +1,4 @@
-﻿using TaskForge.Application.Dtos;
-using TaskForge.Application.Interfaces.Repositories;
-using TaskForge.Application.Services;
-using TaskForge.Domain.Entities;
+﻿using TaskForge.Domain.Entities;
 
 namespace TaskForge.Tests.DomainTests
 {
