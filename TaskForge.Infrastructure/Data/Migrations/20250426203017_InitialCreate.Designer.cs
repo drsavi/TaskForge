@@ -5,11 +5,12 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TaskForge.Api.Data;
+using TaskForge.Application.Data;
+using TaskForge.Infrastructure.Data;
 
 #nullable disable
 
-namespace TaskForge.Api.Data.Migrations
+namespace TaskForge.Application.Data.Migrations
 {
     [DbContext(typeof(TaskForgeDbContext))]
     [Migration("20250426203017_InitialCreate")]
