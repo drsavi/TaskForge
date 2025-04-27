@@ -1,6 +1,6 @@
 ﻿using TaskForge.Domain.Entities;
 
-namespace TaskForge.Infrastructure.Repositories.Interfaces
+namespace TaskForge.Application.Interfaces.Repositories
 {
     public interface IProjectRepository
     {

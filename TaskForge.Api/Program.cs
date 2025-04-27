@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using TaskForge.Application.Services.Interfaces;
-using TaskForge.Application.Services.Implementations;
-using TaskForge.Infrastructure.Repositories.Implementations;
-using TaskForge.Infrastructure.Repositories.Interfaces;
 using TaskForge.Infrastructure.Data;
+using TaskForge.Infrastructure.Repositories;
+using TaskForge.Application.Services;
+using TaskForge.Application.Interfaces.Repositories;
+using TaskForge.Application.Interfaces.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

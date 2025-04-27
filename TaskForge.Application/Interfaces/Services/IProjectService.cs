@@ -1,6 +1,6 @@
 ﻿using TaskForge.Application.Dtos;
 
-namespace TaskForge.Application.Services.Interfaces
+namespace TaskForge.Application.Interfaces.Services
 {
     public interface IProjectService
     {

@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TaskForge.Application.Interfaces.Repositories;
 using TaskForge.Domain.Entities;
 using TaskForge.Infrastructure.Data;
-using TaskForge.Infrastructure.Repositories.Interfaces;
 
-namespace TaskForge.Infrastructure.Repositories.Implementations
+namespace TaskForge.Infrastructure.Repositories
 {
     public class ProjectRepository : IProjectRepository
     {

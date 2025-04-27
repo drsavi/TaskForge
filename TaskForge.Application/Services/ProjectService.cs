@@ -1,9 +1,9 @@
 ﻿using TaskForge.Application.Dtos;
+using TaskForge.Application.Interfaces.Repositories;
+using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Mappers;
-using TaskForge.Application.Services.Interfaces;
-using TaskForge.Infrastructure.Repositories.Interfaces;
 
-namespace TaskForge.Application.Services.Implementations
+namespace TaskForge.Application.Services
 {
     public class ProjectService : IProjectService
     {

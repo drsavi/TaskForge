@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TaskForge.Application.Constants;
 using TaskForge.Application.Dtos;
-using TaskForge.Application.Services.Interfaces;
+using TaskForge.Application.Interfaces.Services;
 
 namespace TaskForge.Application.Controllers
 {
