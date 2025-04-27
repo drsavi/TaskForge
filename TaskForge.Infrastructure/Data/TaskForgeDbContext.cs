@@ -3,9 +3,8 @@ using TaskForge.Domain.Entities;
 
 namespace TaskForge.Infrastructure.Data
 {
-    public class TaskForgeDbContext : DbContext
+    public class TaskForgeDbContext(DbContextOptions<TaskForgeDbContext> opts) : DbContext(opts)
     {
-        public TaskForgeDbContext(DbContextOptions<TaskForgeDbContext> opts) : base(opts) { }
         public DbSet<Project> Projects { get; set; } = null!;
     }
 }
