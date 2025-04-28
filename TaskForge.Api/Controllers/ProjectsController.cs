@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TaskForge.Application.Constants;
 using TaskForge.Application.Dtos;
 using TaskForge.Application.Interfaces.Services;
 
 namespace TaskForge.Application.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class ProjectsController : ControllerBase

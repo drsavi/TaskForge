@@ -1,19 +1,21 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TaskForge.Infrastructure.Data;
-using TaskForge.Infrastructure.Repositories;
-using TaskForge.Application.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Polly;
+using System.Text;
+using System.Text.Json;
 using TaskForge.Application.Interfaces.Repositories;
 using TaskForge.Application.Interfaces.Services;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using System.Text.Json;
-using Polly;
+using TaskForge.Application.Services;
+using TaskForge.Infrastructure.Data;
+using TaskForge.Infrastructure.Identity;
+using TaskForge.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
-builder.Services.AddControllers();
 
 // 1. Configurar EF Core + PostgreSQL
 builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
@@ -29,15 +31,75 @@ builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
         }
     ));
 
-// 2. Registrar o padrão Repository
+// 2) Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // configure políticas de senha, lockout, etc:
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<TaskForgeDbContext>()
+.AddDefaultTokenProviders();
+
+// 3) JWT Bearer
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "DEV_SECRET_KEY");
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "TaskForgeApi",
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+
+// 4. Register Repository
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
-// 3. Registrar o padrão Service
+// 5. Register Service
 builder.Services.AddScoped<IProjectService, ProjectService>();
 
-// 4. Controllers, Swagger e tudo mais
+// 6. Controllers, Swagger etc
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TaskForge API", Version = "v1" });
+
+    // 1) Define o esquema de segurança "Bearer"
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Insira o token JWT assim: Bearer {seu token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddHttpClient("ExternalApi")
     .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
@@ -65,7 +127,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// HEALTHCHECKS
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+// Helthchecks
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false
@@ -93,7 +160,4 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     }
 });
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
 app.Run();

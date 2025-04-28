@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TaskForge.Infrastructure.Data;
 
 #nullable disable
 
-namespace TaskForge.Application.Data.Migrations
+namespace TaskForge.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TaskForgeDbContext))]
-    partial class TaskForgeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428024230_InitialIdentityAndProjects")]
+    partial class InitialIdentityAndProjects
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
