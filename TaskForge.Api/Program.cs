@@ -7,6 +7,7 @@ using TaskForge.Application.Interfaces.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
+using Polly;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,17 @@ builder.Services.AddControllers();
 
 // 1. Configurar EF Core + PostgreSQL
 builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    opts.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default"),
+        npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null
+            );
+        }
+    ));
 
 // 2. Registrar o padrão Repository
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
@@ -25,9 +36,18 @@ builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // 4. Controllers, Swagger e tudo mais
-//builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddHttpClient("ExternalApi")
+    .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
+        retryCount: 3,
+        sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
+        onRetry: (outcome, timespan, retryAttempt, context) =>
+        {
+            Console.WriteLine($"Retry {retryAttempt} after {timespan.TotalSeconds}s due to {outcome.Exception?.Message}");
+        }
+    ));
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString: builder.Configuration.GetConnectionString("Default"),
