@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskForge.Application.Constants;
 using TaskForge.Application.Dtos;
 using TaskForge.Application.Interfaces.Services;
+using TaskForge.Application.Projects.Commands.CreateProject;
+using TaskForge.Application.Projects.Queries.GetAllProjects.TaskForge.Application.Projects.Queries.GetAllProjects;
+using TaskForge.Application.Projects.Queries.GetProjectById;
 
 namespace TaskForge.Application.Controllers
 {
@@ -12,30 +16,59 @@ namespace TaskForge.Application.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService _service;
+        private readonly IMediator _mediator;
 
-        public ProjectsController(IProjectService service)
+        public ProjectsController(IProjectService service, IMediator mediator)
         {
             _service = service;
+            _mediator = mediator;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<ProjectDto>> GetAll(CancellationToken cancellationtoken)
-            => await _service.GetAllAsync(cancellationtoken);
-
-        [HttpGet(RouteConstants.Id)]
-        public async Task<ActionResult<ProjectDto>> GetById(Guid id, CancellationToken cancellationtoken)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProjectDto>))]
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll(CancellationToken cancellationToken)
         {
-            var dto = await _service.GetByIdAsync(id, cancellationtoken);
-            return dto is null ? NotFound() : Ok(dto);
+            var projects = await _mediator.Send(new GetAllProjectsQuery(), cancellationToken);
+            return Ok(projects);
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProjectDto>> Create(CreateProjectDto dto, CancellationToken cancellationtoken)
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ProjectDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
+        public async Task<ActionResult<ProjectDto>> Create([FromBody] CreateProjectRequest request)
         {
-            var created = await _service.CreateAsync(dto, cancellationtoken);
-            return CreatedAtAction(nameof(GetById),
-                                   new { id = created.Id },
-                                   created);
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var id = await _mediator.Send(new CreateProjectCommand(request.Name, request.Description));
+
+            var dto = await _mediator.Send(new GetProjectByIdQuery(id));
+            if (dto is null)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ProblemDetails
+                    {
+                        Title = "Project creation failed",
+                        Detail = "An unexpected error occurred when retrieving the created project."
+                    });
+            }
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = dto.Id },
+                dto)
+            ;
+        }
+
+        [HttpGet(RouteConstants.Id)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProjectDto))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProjectDto>> GetById(Guid id, CancellationToken cancellationToken)
+        {
+            var dto = await _mediator.Send(new GetProjectByIdQuery(id), cancellationToken);
+            if (dto is null) return NotFound();
+            return Ok(dto);
         }
 
         [HttpPut(RouteConstants.Id)]

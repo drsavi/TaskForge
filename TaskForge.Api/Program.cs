@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
@@ -10,6 +11,7 @@ using System.Text;
 using System.Text.Json;
 using TaskForge.Application.Interfaces.Repositories;
 using TaskForge.Application.Interfaces.Services;
+using TaskForge.Application.Projects.Commands.CreateProject;
 using TaskForge.Application.Services;
 using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
@@ -100,6 +102,8 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+builder.Services.AddMediatR(typeof(CreateProjectCommand).Assembly);
 
 builder.Services.AddHttpClient("ExternalApi")
     .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(

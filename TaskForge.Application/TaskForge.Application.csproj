@@ -10,4 +10,8 @@
     <ProjectReference Include="..\TaskForge.Domain\TaskForge.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="10.0.1" />
+  </ItemGroup>
+
 </Project>
