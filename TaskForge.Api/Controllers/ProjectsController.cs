@@ -10,7 +10,7 @@ using TaskForge.Application.Projects.Queries.GetProjectById;
 
 namespace TaskForge.Application.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class ProjectsController : ControllerBase
@@ -38,27 +38,37 @@ namespace TaskForge.Application.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
         public async Task<ActionResult<ProjectDto>> Create([FromBody] CreateProjectRequest request)
         {
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
-
-            var id = await _mediator.Send(new CreateProjectCommand(request.Name, request.Description));
-
-            var dto = await _mediator.Send(new GetProjectByIdQuery(id));
-            if (dto is null)
+            try
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new ProblemDetails
-                    {
-                        Title = "Project creation failed",
-                        Detail = "An unexpected error occurred when retrieving the created project."
-                    });
-            }
+                if (!ModelState.IsValid)
+                    return ValidationProblem(ModelState);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = dto.Id },
-                dto)
-            ;
+                var id = await _mediator.Send(new CreateProjectCommand(request.Name, request.Description));
+
+                var dto = await _mediator.Send(new GetProjectByIdQuery(id));
+                if (dto is null)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new ProblemDetails
+                        {
+                            Title = "Project creation failed",
+                            Detail = "An unexpected error occurred when retrieving the created project."
+                        });
+                }
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = dto.Id },
+                    dto)
+                ;
+            }
+            catch (FluentValidation.ValidationException ex)
+            {
+                foreach (var error in ex.Errors)
+                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+
+                return ValidationProblem(ModelState);
+            }
         }
 
         [HttpGet(RouteConstants.Id)]
@@ -72,15 +82,28 @@ namespace TaskForge.Application.Controllers
         }
 
         [HttpPut(RouteConstants.Id)]
-        public async Task<IActionResult> Update(Guid id, UpdateProjectDto dto, CancellationToken cancellationtoken)
-            => await _service.UpdateAsync(id, dto, cancellationtoken)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectDto dto, CancellationToken cancellationtoken)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            return await _service.UpdateAsync(id, dto, cancellationtoken)
                  ? NoContent()
                  : NotFound();
+        }
 
         [HttpDelete(RouteConstants.Id)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationtoken)
-            => await _service.DeleteAsync(id, cancellationtoken)
+        {
+            return await _service.DeleteAsync(id, cancellationtoken)
                  ? NoContent()
                  : NotFound();
+        }
     }
 }

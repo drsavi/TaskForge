@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -9,6 +10,8 @@ using Microsoft.OpenApi.Models;
 using Polly;
 using System.Text;
 using System.Text.Json;
+using TaskForge.Application.Common.Behaviors;
+using TaskForge.Application.Common.Validators;
 using TaskForge.Application.Interfaces.Repositories;
 using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Projects.Commands.CreateProject;
@@ -45,7 +48,13 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // 3) JWT Bearer
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "DEV_SECRET_KEY");
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is missing in configuration");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("Jwt:Issuer is missing in configuration");
+
+var key = Encoding.UTF8.GetBytes(jwtKey);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -56,7 +65,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "TaskForgeApi",
+        ValidIssuer = jwtIssuer,
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
@@ -103,7 +112,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddMediatR(typeof(CreateProjectCommand).Assembly);
+// 7) Validators do FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProjectCommandValidator>();
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(CreateProjectCommand).Assembly);
+    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+});
+
+builder.Services.Configure<JsonSerializerOptions>(options =>
+{
+    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.WriteIndented = true;
+});
 
 builder.Services.AddHttpClient("ExternalApi")
     .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
@@ -116,11 +138,13 @@ builder.Services.AddHttpClient("ExternalApi")
     ));
 
 builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString: builder.Configuration.GetConnectionString("Default"),
+    .AddNpgSql(
+        connectionString: builder.Configuration.GetConnectionString("Default"),
         name: "postgresql",
         failureStatus: HealthStatus.Unhealthy,
-        tags: new[] { "db", "ready" });
-
+        tags: new[] { "db", "ready" },
+        timeout: TimeSpan.FromSeconds(3)
+    );
 
 var app = builder.Build();
 
