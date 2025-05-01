@@ -1,8 +1,10 @@
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -39,7 +41,7 @@ builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
 // 2) Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // configure pol�ticas de senha, lockout, etc:
+    // configure políticas de senha, lockout, etc:
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.User.RequireUniqueEmail = true;
@@ -80,13 +82,36 @@ builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // 6. Controllers, Swagger etc
-builder.Services.AddControllers();
+builder.Services
+  .AddControllers(opts => {
+  })
+  .ConfigureApiBehaviorOptions(opts =>
+  {
+      opts.InvalidModelStateResponseFactory = context =>
+      {
+          var errors = context.ModelState
+             .Where(x => x.Value.Errors.Count > 0)
+             .ToDictionary(
+                 kvp => kvp.Key,
+                 kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+             );
+
+          var details = new ValidationProblemDetails(errors)
+          {
+              Title = "Validation failed",
+              Status = StatusCodes.Status400BadRequest
+          };
+
+          return new BadRequestObjectResult(details);
+      };
+  });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TaskForge API", Version = "v1" });
 
-    // 1) Define o esquema de seguran�a "Bearer"
+    // 1) Define o esquema de segurança "Bearer"
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Insira o token JWT assim: Bearer {seu token}",
@@ -158,6 +183,53 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+
+app.UseExceptionHandler(errApp =>
+{
+    errApp.Run(async context =>
+    {
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        var ex = feature?.Error;
+
+        // FluentValidation → 400
+        if (ex is ValidationException vex)
+        {
+            var errors = vex.Errors
+               .GroupBy(e => e.PropertyName)
+               .ToDictionary(
+                   g => g.Key,
+                   g => g.Select(e => e.ErrorMessage).ToArray()
+               );
+
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new ValidationProblemDetails(errors));
+            return;
+        }
+
+        // Domain exception → 404 
+        if (ex is KeyNotFoundException)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Title = ex?.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+            return;
+        }
+
+        // Qualquer outro erro → 500
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Title = "An unexpected error occurred.",
+            Status = StatusCodes.Status500InternalServerError,
+            Detail = ex?.Message
+        });
+    });
+});
+
 app.MapControllers();
 
 // Helthchecks

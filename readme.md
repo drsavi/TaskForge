@@ -61,7 +61,8 @@ TaskForge is a modular, clean-architecture Web API for managing projects. It dem
 2. **Configure appsettings.json**
 
     ``` {
-      {           "ConnectionStrings": {
+      {  
+         "ConnectionStrings": {
             "Default": "Host=localhost;Database=taskforge;Username=postgres;Password=postgres"
           },
           "Jwt": {

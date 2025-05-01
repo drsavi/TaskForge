@@ -39,21 +39,6 @@ namespace TaskForge.Tests.ApplicationTests
         }
 
         [Fact]
-        public async Task CreateAsync_ShouldAddNewProjectAndReturnDto()
-        {
-            var repository = new InMemoryRepository();
-            var service = new ProjectService(repository);
-            var dto = new CreateProjectDto("Lunar Gateway", "Orbital outpost design");
-
-            var result = await service.CreateAsync(dto, CancellationToken.None);
-
-            Assert.Single(repository.Projects);
-            Assert.Equal(result.Id, repository.Projects[0].Id);
-            Assert.Equal("Lunar Gateway", result.Name);
-            Assert.Equal("Orbital outpost design", result.Description);
-        }
-
-        [Fact]
         public async Task GetAllAsync_ShouldReturnAllExistingProjects()
         {
             var repository = new InMemoryRepository();

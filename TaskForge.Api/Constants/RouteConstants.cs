@@ -1,4 +1,4 @@
-﻿namespace TaskForge.Application.Constants
+﻿namespace TaskForge.Api.Constants
 {
     public static class RouteConstants
     {

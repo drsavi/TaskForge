@@ -26,13 +26,6 @@ namespace TaskForge.Application.Services
             return entity?.ToDto();
         }
 
-        public async Task<ProjectDto> CreateAsync(CreateProjectDto dto, CancellationToken cancellationToken)
-        {
-            var entity = dto.ToDomain();
-            await _repository.AddAsync(entity, cancellationToken);
-            return entity.ToDto();
-        }
-
         public async Task<bool> UpdateAsync(Guid id, UpdateProjectDto dto, CancellationToken cancellationToken)
         {
             var entity = await _repository.GetByIdAsync(id, cancellationToken);
