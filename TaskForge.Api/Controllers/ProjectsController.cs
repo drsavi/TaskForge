@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskForge.Api.Constants;
 using TaskForge.Application.Dtos;
-using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Projects.Commands.CreateProject;
+using TaskForge.Application.Projects.Commands.DeleteProject;
+using TaskForge.Application.Projects.Commands.UpdateProject;
 using TaskForge.Application.Projects.Queries.GetAllProjects.TaskForge.Application.Projects.Queries.GetAllProjects;
 using TaskForge.Application.Projects.Queries.GetProjectById;
 
@@ -13,9 +14,8 @@ namespace TaskForge.Api.Controllers
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class ProjectsController(IProjectService service, IMediator mediator) : ControllerBase
+    public class ProjectsController(IMediator mediator) : ControllerBase
     {
-        private readonly IProjectService _service = service;
         private readonly IMediator _mediator = mediator;
 
         [HttpGet]
@@ -38,7 +38,7 @@ namespace TaskForge.Api.Controllers
             var dto = await _mediator.Send(new GetProjectByIdQuery(id), cancellationToken);
 
             if (dto is null)
-                throw new KeyNotFoundException($"Project with id '{id}' not found.");
+                throw new KeyNotFoundException($"Project id '{id}' not found.");
 
             return Ok(dto);
         }
@@ -46,10 +46,9 @@ namespace TaskForge.Api.Controllers
         [HttpPut(RouteConstants.Id)]
         public async Task<IActionResult> Update(Guid id, UpdateProjectDto dto, CancellationToken cancellationtoken)
         {
-            var updated = await _service.UpdateAsync(id, dto, cancellationtoken);
-
-            if (!updated)
-                throw new KeyNotFoundException($"Project with id '{id}' not found.");
+            var success = await _mediator.Send(new UpdateProjectCommand(id, dto.Name, dto.Description), cancellationtoken);
+            if (!success)
+                throw new KeyNotFoundException($"Project id '{id}' not found.");
 
             return NoContent();
         }
@@ -57,9 +56,9 @@ namespace TaskForge.Api.Controllers
         [HttpDelete(RouteConstants.Id)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
+            var success = await _mediator.Send(new DeleteProjectCommand(id), cancellationToken);
 
-            if (!deleted)
+            if (!success)
                 throw new KeyNotFoundException($"Project with id '{id}' not found.");
 
             return NoContent();

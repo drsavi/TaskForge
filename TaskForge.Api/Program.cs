@@ -15,9 +15,7 @@ using System.Text.Json;
 using TaskForge.Application.Common.Behaviors;
 using TaskForge.Application.Common.Validators;
 using TaskForge.Application.Interfaces.Repositories;
-using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Projects.Commands.CreateProject;
-using TaskForge.Application.Services;
 using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
 using TaskForge.Infrastructure.Repositories;
@@ -77,9 +75,6 @@ builder.Services.AddAuthentication(options =>
 
 // 4. Register Repository
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
-
-// 5. Register Service
-builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // 6. Controllers, Swagger etc
 builder.Services

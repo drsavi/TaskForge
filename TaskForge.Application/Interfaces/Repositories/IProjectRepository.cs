@@ -8,6 +8,6 @@ namespace TaskForge.Application.Interfaces.Repositories
         Task<IEnumerable<Project>> GetAllAsync(CancellationToken cancellationToken);
         Task AddAsync(Project project, CancellationToken cancellationToken);
         Task UpdateAsync(Project project, CancellationToken cancellationToken);
-        Task DeleteAsync(Project project, CancellationToken ct);
+        Task DeleteAsync(Project project, CancellationToken cancellationToken);
     }
 }
