@@ -6,7 +6,7 @@ using TaskForge.Application.Dtos;
 using TaskForge.Application.Projects.Commands.CreateProject;
 using TaskForge.Application.Projects.Commands.DeleteProject;
 using TaskForge.Application.Projects.Commands.UpdateProject;
-using TaskForge.Application.Projects.Queries.GetAllProjects.TaskForge.Application.Projects.Queries.GetAllProjects;
+using TaskForge.Application.Projects.Queries.GetAllProjects;
 using TaskForge.Application.Projects.Queries.GetProjectById;
 
 namespace TaskForge.Api.Controllers

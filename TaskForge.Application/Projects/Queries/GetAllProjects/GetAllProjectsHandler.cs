@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using TaskForge.Application.Dtos;
 using TaskForge.Application.Interfaces.Repositories;
-using TaskForge.Application.Projects.Queries.GetAllProjects.TaskForge.Application.Projects.Queries.GetAllProjects;
 
 namespace TaskForge.Application.Projects.Queries.GetAllProjects
 {
