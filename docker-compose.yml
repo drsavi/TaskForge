@@ -1,0 +1,75 @@
+# TaskForge — stack completa para rodar localmente como em um servidor.
+#
+# Pré-requisito: Docker Engine + Compose (WSL2, Docker Desktop, etc.)
+#
+# 1) cp .env.example .env   (e ajuste JWT_KEY)
+# 2) docker compose up -d --build
+# 3) Swagger: http://localhost:8080/swagger
+# 4) Portainer: http://localhost:9000
+#
+# Credenciais padrão são apenas para desenvolvimento local.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: taskforge-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-taskforge_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taskforge_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskforge-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      EnableSwagger: "true"
+      UseHttpsRedirection: "false"
+      ApplyMigrationsOnStartup: "true"
+      ConnectionStrings__Default: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-taskforge_db};
+        Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Key: ${JWT_KEY:?Defina JWT_KEY no arquivo .env — veja .env.example}
+      Jwt__Issuer: ${JWT_ISSUER:-TaskForgeApi}
+      Jwt__Audience: ${JWT_AUDIENCE:-TaskForgeClient}
+      Jwt__ExpireMinutes: ${JWT_EXPIRE_MINUTES:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: taskforge-portainer
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  portainer_data:

@@ -5,12 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TaskForge.Application.Data;
 using TaskForge.Infrastructure.Data;
 
 #nullable disable
 
-namespace TaskForge.Application.Data.Migrations
+namespace TaskForge.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TaskForgeDbContext))]
     [Migration("20250426203017_InitialCreate")]
@@ -21,7 +20,7 @@ namespace TaskForge.Application.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);

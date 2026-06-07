@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Polly;
 using System.Text;
 using System.Text.Json;
 using TaskForge.Application.Common.Behaviors;
@@ -20,12 +19,22 @@ using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
 using TaskForge.Infrastructure.Repositories;
 
+const string JwtKeyMissingMessage =
+    "Jwt:Key is not configured. Options:\n" +
+    "  Docker: set JWT_KEY in the .env file (see .env.example)\n" +
+    "  Local:  dotnet user-secrets set \"Jwt:Key\" \"<your-dev-secret-at-least-32-chars>\" --project TaskForge.Api\n" +
+    "  Or set the environment variable Jwt__Key.";
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configurar EF Core + PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException(
+        "ConnectionStrings:Default is not configured. " +
+        "Use appsettings.json defaults or set ConnectionStrings__Default.");
+
 builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
     opts.UseNpgsql(
-        builder.Configuration.GetConnectionString("Default"),
+        connectionString,
         npgsqlOptions =>
         {
             npgsqlOptions.EnableRetryOnFailure(
@@ -36,10 +45,8 @@ builder.Services.AddDbContext<TaskForgeDbContext>(opts =>
         }
     ));
 
-// 2) Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // configure políticas de senha, lockout, etc:
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.User.RequireUniqueEmail = true;
@@ -47,11 +54,15 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<TaskForgeDbContext>()
 .AddDefaultTokenProviders();
 
-// 3) JWT Bearer
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is missing in configuration");
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException(JwtKeyMissingMessage);
+
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
-    ?? throw new InvalidOperationException("Jwt:Issuer is missing in configuration");
+    ?? throw new InvalidOperationException("Jwt:Issuer is missing in configuration.");
+
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException("Jwt:Audience is missing in configuration.");
 
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -66,29 +77,27 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuer = true,
         ValidIssuer = jwtIssuer,
-        ValidateAudience = false,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
 
-// 4. Register Repository
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
-// 6. Controllers, Swagger etc
 builder.Services
-  .AddControllers(opts => {
-  })
+  .AddControllers()
   .ConfigureApiBehaviorOptions(opts =>
   {
       opts.InvalidModelStateResponseFactory = context =>
       {
           var errors = context.ModelState
-             .Where(x => x.Value.Errors.Count > 0)
+             .Where(x => x.Value?.Errors.Count > 0)
              .ToDictionary(
                  kvp => kvp.Key,
-                 kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                 kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
              );
 
           var details = new ValidationProblemDetails(errors)
@@ -106,7 +115,6 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TaskForge API", Version = "v1" });
 
-    // 1) Define o esquema de segurança "Bearer"
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Insira o token JWT assim: Bearer {seu token}",
@@ -132,7 +140,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 7) Validators do FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProjectCommandValidator>();
 
 builder.Services.AddMediatR(cfg =>
@@ -147,19 +154,9 @@ builder.Services.Configure<JsonSerializerOptions>(options =>
     options.WriteIndented = true;
 });
 
-builder.Services.AddHttpClient("ExternalApi")
-    .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(
-        retryCount: 3,
-        sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
-        onRetry: (outcome, timespan, retryAttempt, context) =>
-        {
-            Console.WriteLine($"Retry {retryAttempt} after {timespan.TotalSeconds}s due to {outcome.Exception?.Message}");
-        }
-    ));
-
 builder.Services.AddHealthChecks()
     .AddNpgSql(
-        connectionString: builder.Configuration.GetConnectionString("Default"),
+        connectionString: connectionString,
         name: "postgresql",
         failureStatus: HealthStatus.Unhealthy,
         tags: new[] { "db", "ready" },
@@ -168,17 +165,26 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<TaskForgeDbContext>();
+    db.Database.Migrate();
+}
+
+var enableSwagger = app.Environment.IsDevelopment()
+    || builder.Configuration.GetValue<bool>("EnableSwagger");
+
+if (enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (builder.Configuration.GetValue("UseHttpsRedirection", true))
+    app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
 
 app.UseExceptionHandler(errApp =>
 {
@@ -187,7 +193,6 @@ app.UseExceptionHandler(errApp =>
         var feature = context.Features.Get<IExceptionHandlerFeature>();
         var ex = feature?.Error;
 
-        // FluentValidation → 400
         if (ex is ValidationException vex)
         {
             var errors = vex.Errors
@@ -202,7 +207,6 @@ app.UseExceptionHandler(errApp =>
             return;
         }
 
-        // Domain exception → 404 
         if (ex is KeyNotFoundException)
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -214,7 +218,6 @@ app.UseExceptionHandler(errApp =>
             return;
         }
 
-        // Qualquer outro erro → 500
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         await context.Response.WriteAsJsonAsync(new ProblemDetails
         {
@@ -227,7 +230,6 @@ app.UseExceptionHandler(errApp =>
 
 app.MapControllers();
 
-// Helthchecks
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false

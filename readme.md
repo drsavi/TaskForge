@@ -1,99 +1,231 @@
 ﻿# TaskForge
 
-> **Portfolio-grade .NET Web API** • *Under Construction*
+> **English version:** [README.en.md](README.en.md)
+
+API Web .NET para gerenciamento de projetos, com autenticação JWT, Clean Architecture e CQRS via MediatR.
+
+## Pré-requisitos
+
+| Cenário | O que instalar |
+|---------|----------------|
+| **Rodar tudo com Docker (recomendado)** | [Docker Engine + Compose](#docker-no-windows-sem-desktop) |
+| **Desenvolver código .NET localmente** | .NET 8 SDK + Docker (só para o banco) ou stack Docker completa |
 
 ---
 
-## 📖 Project Overview  
-TaskForge is a modular, clean-architecture Web API for managing projects. It demonstrates professional .NET development practices—exposing CRUD endpoints for “Project” entities, wired up with authentication, validation, resilience and observability.
+## Deploy local com Docker (recomendado)
+
+Sobe **PostgreSQL + API + Portainer** com um comando — como se fosse instalar no seu PC/servidor.
+
+### 1. Instalar Docker
+
+Veja [Docker no Windows (sem Desktop)](#docker-no-windows-sem-desktop) se ainda não tiver Docker Engine + Compose.
+
+### 2. Configurar variáveis de ambiente
+
+Na pasta raiz da solution (`TaskForge/`):
+
+```powershell
+copy .env.example .env
+```
+
+Edite o `.env` e defina uma chave JWT com **pelo menos 32 caracteres**:
+
+```env
+JWT_KEY=sua-chave-local-com-pelo-menos-32-caracteres
+```
+
+> O arquivo `.env` não é versionado. Nunca commite segredos reais.
+
+### 3. Subir a stack completa
+
+```powershell
+cd TaskForge
+docker compose up -d --build
+```
+
+Isso sobe:
+
+| Serviço | Container | Acesso |
+|---------|-----------|--------|
+| API + Swagger | `taskforge-api` | **http://localhost:8080/swagger** |
+| PostgreSQL | `taskforge-postgres` | `localhost:5432` |
+| Portainer (UI) | `taskforge-portainer` | **http://localhost:9000** |
+
+A API aplica as **migrations automaticamente** na inicialização (`ApplyMigrationsOnStartup`).
+
+Verifique o status:
+
+```powershell
+docker compose ps
+docker compose logs api
+```
+
+Parar tudo:
+
+```powershell
+docker compose down
+```
+
+Remover volumes (apaga o banco):
+
+```powershell
+docker compose down -v
+```
+
+### 4. Testar no Swagger
+
+Abra **http://localhost:8080/swagger** e siga o [fluxo manual](#fluxo-manual-da-api-swagger).
+
+### 5. Portainer
+
+Abra **http://localhost:9000**, crie o usuário admin na primeira visita e selecione o ambiente **local**. Você verá os containers `taskforge-api`, `taskforge-postgres` e `taskforge-portainer`.
 
 ---
 
-## 🎯 Objectives  
-- Provide a clean, scalable back-end for project management  
-- Showcase Domain-Driven Design, Clean Architecture & CQRS  
-- Integrate robust authentication (ASP NET Core Identity + JWT)  
-- Implement end-to-end validation, logging, health checks & retry policies  
-- Serve as a launchpad for a full-stack sample (client app, CI/CD, Docker)
+## Docker no Windows (sem Desktop)
+
+O TaskForge **precisa de um engine Docker**. O **Portainer** é apenas a interface web — **não substitui** o Docker.
+
+### Opção recomendada: Docker Engine no WSL2
+
+1. **Habilite o WSL2** (PowerShell como administrador):
+
+   ```powershell
+   wsl --install
+   ```
+
+2. **Dentro do Ubuntu (WSL)**:
+
+   ```bash
+   sudo apt update
+   sudo apt install -y docker.io docker-compose-v2
+   sudo usermod -aG docker $USER
+   ```
+
+   Feche e reabra o terminal WSL. Verifique: `docker --version` e `docker compose version`.
+
+3. Execute os comandos de [Deploy local com Docker](#deploy-local-com-docker-recomendado) a partir da pasta do projeto.
+
+### Alternativa
+
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) — mais simples, porém mais pesado.
 
 ---
 
-## 🚀 Future Roadmap  
-- **Full CQRS Read/Write Separation**: introduce a dedicated ReadDbContext or read replica  
-- **Event-Driven Projections**: publish domain events & build materialized views  
-- **2FA & Role-Based Access**: extend Identity for multi-factor & permissions  
-- **Container Orchestration**: Docker Compose & Kubernetes manifests  
-- **CI/CD Pipelines**: GitHub Actions or Azure DevOps for build, test, deploy  
-- **Comprehensive Testing**: expand unit & integration tests (xUnit, Moq, FluentAssertions)  
-- **Sample Front-End**: Angular or Vue.js SPA consuming the API
+## Desenvolvimento .NET local (opcional)
+
+Use este fluxo se quiser depurar código no Visual Studio / VS Code com `dotnet run`, mantendo o banco no Docker.
+
+### 1. Ferramentas e JWT
+
+```powershell
+dotnet tool restore
+dotnet user-secrets set "Jwt:Key" "TaskForge-Local-Dev-Secret-Key-32chars!" --project TaskForge.Api
+```
+
+### 2. Subir só a infraestrutura (PostgreSQL + Portainer)
+
+```powershell
+cd TaskForge
+docker compose up -d postgres portainer
+```
+
+### 3. Migrations e API
+
+```powershell
+dotnet ef database update --project TaskForge.Infrastructure --startup-project TaskForge.Api
+cd TaskForge.Api
+dotnet run
+```
+
+Swagger local: `https://localhost:7294/swagger` ou `http://localhost:5062/swagger`
+
+### 4. Testes
+
+```powershell
+dotnet test TaskForge.sln
+```
 
 ---
 
-## 🛠 Technologies  
-- **Framework**: .NET 8, C#, ASP.NET Core Web API  
-- **Persistence**: Entity Framework Core, PostgreSQL  
-- **Authentication**: ASP.NET Core Identity, JWT Bearer  
-- **Mediation & CQRS**: MediatR  
-- **Validation**: FluentValidation + MediatR Pipeline Behavior  
-- **Resilience**: Polly (retry policies), HealthChecks  
-- **Observability**: Serilog, Swagger/OpenAPI  
-- **DevOps**: Docker, Docker Compose (planned: Kubernetes, GitHub Actions)  
-- **Testing**: xUnit, Moq, FluentAssertions
+## Fluxo manual da API (Swagger)
+
+1. Abra o Swagger (`http://localhost:8080/swagger` no Docker, ou porta local do `dotnet run`).
+2. **Registrar** — `POST /api/auth/register`:
+
+   ```json
+   {
+     "fullName": "Usuário Demo",
+     "email": "demo@taskforge.local",
+     "password": "Demo123"
+   }
+   ```
+
+3. **Login** — `POST /api/auth/login`:
+
+   ```json
+   {
+     "email": "demo@taskforge.local",
+     "password": "Demo123"
+   }
+   ```
+
+   Copie o `token`.
+
+4. **Autorizar** — clique em **Authorize** → `Bearer {token}`.
+5. **Criar projeto** — `POST /api/projects`:
+
+   ```json
+   {
+     "name": "Meu Primeiro Projeto",
+     "description": "Demonstração do portfólio"
+   }
+   ```
+
+6. **Listar** — `GET /api/projects`
+7. **Buscar** — `GET /api/projects/{id}`
+8. **Atualizar** — `PUT /api/projects/{id}`
+9. **Excluir** — `DELETE /api/projects/{id}`
 
 ---
 
-## 🏛 Architecture & Patterns  
-- **Domain-Driven Design (DDD)**: Entities, Value Objects & Domain Events  
-- **Clean/Onion Architecture**: Layered solution (Domain → Application → Infrastructure → API)  
-- **CQRS**: Separate Command (writes) and Query (reads) models via MediatR  
-- **Repository Pattern**: `IProjectRepository` + EF Core implementation  
-- **Dependency Injection**: Built-in ASP.NET Core container  
-- **SOLID Principles**: Single Responsibility, Open-Closed, etc.
+## Referência de configuração
+
+| Chave | Docker (`.env`) | Local (`dotnet run`) |
+|-------|-----------------|----------------------|
+| JWT | `JWT_KEY` → `Jwt__Key` | User Secrets / `Jwt__Key` |
+| Banco | automático via compose | `ConnectionStrings:Default` em `appsettings.json` |
+| Swagger no container | `EnableSwagger=true` | `ASPNETCORE_ENVIRONMENT=Development` |
+| Migrations automáticas | `ApplyMigrationsOnStartup=true` | `dotnet ef database update` manual |
+
+Credenciais PostgreSQL padrão (somente dev local): `postgres` / `postgres` / `taskforge_db`.
 
 ---
 
-## 🚀 Getting Started
+## Health checks
 
-1. **Clone the repository**  
-   ```git clone https://github.com/your-username/taskforge.git
-   cd taskforge
+- Liveness: `GET /health/live`
+- Readiness (PostgreSQL): `GET /health/ready`
 
-2. **Configure appsettings.json**
+No Docker: `http://localhost:8080/health/ready`
 
-    ``` {
-      {  
-         "ConnectionStrings": {
-            "Default": "Host=localhost;Database=taskforge;Username=postgres;Password=postgres"
-          },
-          "Jwt": {
-            "Key": "LOCAL_DEV_SECRET_KEY_CHANGE_ME",
-            "Issuer": "TaskForgeApi",
-            "Audience": "TaskForgeClient",
-            "ExpireMinutes": 60
-          }
-    }
+---
 
-3. **Run migrations**
+## Arquitetura
 
-     ```dotnet ef database update \
-      --project TaskForge.Infrastructure \
-      --startup-project TaskForge.Api
-    ```
+```
+TaskForge.Domain → TaskForge.Application → TaskForge.Infrastructure → TaskForge.Api
+```
 
-4. **Launch the API**
+Arquivos de deploy: `Dockerfile`, `docker-compose.yml`, `.env.example` na raiz da solution.
 
-     ```
-    cd TaskForge.Api
-    dotnet run
-    ```
+---
 
-5. **Explore Swagger UI**
+## Tecnologias
 
-Open your browser at https://localhost:{port}/swagger
-
-## 🤝 Contributing
-
-Contributions, feedback and PRs are welcome! Feel free to open issues or submit pull requests as the project evolves.
-
-⚠️ Note: This is an evolving portfolio project. Features, patterns and infrastructure will continue to be refined.
-Your insights and suggestions are highly appreciated!
+- .NET 8, ASP.NET Core Web API, Docker
+- Entity Framework Core 8 + PostgreSQL
+- ASP.NET Core Identity + JWT Bearer
+- MediatR, FluentValidation
+- xUnit, Moq, FluentAssertions

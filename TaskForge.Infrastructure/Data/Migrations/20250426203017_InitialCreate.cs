@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace TaskForge.Application.Data.Migrations
+namespace TaskForge.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

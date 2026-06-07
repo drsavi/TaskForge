@@ -60,6 +60,8 @@ namespace TaskForge.Api.Controllers
         {
             var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
             var issuer = _config["Jwt:Issuer"]!;
+            var audience = _config["Jwt:Audience"]!;
+            var expireMinutes = _config.GetValue("Jwt:ExpireMinutes", 60);
 
             var claims = new[]
             {
@@ -72,9 +74,9 @@ namespace TaskForge.Api.Controllers
 
             var jwt = new JwtSecurityToken(
                 issuer: issuer,
-                audience: null,
+                audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(jwt);

@@ -1,0 +1,10 @@
+**/.git
+**/.vs
+**/.cursor
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+**/TestResults/
+**/.env
+**/appsettings.*.local.json
