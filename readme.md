@@ -1,231 +1,168 @@
 ﻿# TaskForge
 
-> **English version:** [README.en.md](README.en.md)
+> **Português (Brasil):** [README.pt-BR.md](README.pt-BR.md)
 
-API Web .NET para gerenciamento de projetos, com autenticação JWT, Clean Architecture e CQRS via MediatR.
+> **Status:** This project is under active development. The current backend MVP is not yet complete.
 
-## Pré-requisitos
+TaskForge is a modular personal organization platform designed to centralize projects, tasks, habits, routines, lists, learning activities, and daily planning with minimal friction.
 
-| Cenário | O que instalar |
-|---------|----------------|
-| **Rodar tudo com Docker (recomendado)** | [Docker Engine + Compose](#docker-no-windows-sem-desktop) |
-| **Desenvolver código .NET localmente** | .NET 8 SDK + Docker (só para o banco) ou stack Docker completa |
+Inspired by tools such as Notion, habit trackers, calendars, and Kanban boards, the project aims to provide a more structured and easier-to-maintain alternative. Its goal is to help users capture demands, prioritize activities, visualize progress and, in the future, understand personal patterns based on their historical data.
+
+The backend is being developed as a **modular monolith** using ASP.NET Core and Clean Architecture principles. The current MVP establishes the foundation of the platform through authentication, project management, tasks, and user-based authorization.
 
 ---
 
-## Deploy local com Docker (recomendado)
+## Problem
 
-Sobe **PostgreSQL + API + Portainer** com um comando — como se fosse instalar no seu PC/servidor.
+Maintaining a personal productivity system often requires too much manual upkeep: duplicating information across lists, calendars, and projects; deciding metadata before capturing an idea; and losing visibility into what actually matters today.
 
-### 1. Instalar Docker
+TaskForge seeks to reduce that cognitive load by offering enough flexibility to track real life, with enough structure to avoid constant reconfiguration.
 
-Veja [Docker no Windows (sem Desktop)](#docker-no-windows-sem-desktop) se ainda não tiver Docker Engine + Compose.
+---
 
-### 2. Configurar variáveis de ambiente
+## Product vision
 
-Na pasta raiz da solution (`TaskForge/`):
+Over time, TaskForge should work as a **personal operating system for everyday organization**, helping users quickly understand:
 
-```powershell
-copy .env.example .env
+- what needs to be done today;
+- what is overdue or high priority;
+- what fits available time and energy;
+- which projects are stalled;
+- which habits and routines are being maintained;
+- which learning content is in progress;
+- which patterns emerge from personal history.
+
+---
+
+## Principles
+
+| Principle | Summary |
+|-----------|---------|
+| **Low friction** | Capturing a task or habit should take seconds, not a form. |
+| **Capture first, organize later** | Only the title is required for quick capture; metadata can wait. |
+| **Register once** | A dated task should appear in its project, task list, calendar, and Today view without duplication. |
+| **Satisfying visual progress** | Checklists and completion states should feel rewarding and readable. |
+| **Low-energy days** | Future views will surface essentials, quick wins, and minimum routines. |
+| **Preserved history** | Timestamps and historical data are kept from the start to enable future insights. |
+
+---
+
+## Architecture (one sentence)
+
+A single deployable ASP.NET Core application organized into domain modules (Identity, Projects, Tasks, and future areas) with low coupling between responsibilities — not microservices.
+
+---
+
+## Current state
+
+| Area | Status |
+|------|--------|
+| **Identity** | Register, login, JWT, and Swagger Bearer auth are implemented. User-scoped data isolation is **not** wired into business logic yet. |
+| **Projects** | Full CRUD via MediatR, with FluentValidation. Missing `OwnerId`, per-user filtering, and ownership authorization. |
+| **Tasks** | **Not started** — no `TaskItem` entity, enums, or task endpoints. |
+| **Infrastructure** | PostgreSQL, EF Core, migrations, Docker Compose, health checks, Swagger, and global error handling are in place. |
+| **Tests** | 13 unit tests pass (domain `Project` + `CreateProjectHandler`). No integration or ownership tests. |
+
+See [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for item-level progress and calculated percentages.
+
+---
+
+## Current MVP scope (backend)
+
+The first MVP is a **demonstrable technical foundation**, not the full long-term product.
+
+**Included modules:** Identity, Projects, Tasks.
+
+**Target flow:**
+
+```text
+create account → login → receive JWT → create projects → create tasks in projects
+→ change priority and status → complete tasks → access only own data
 ```
 
-Edite o `.env` e defina uma chave JWT com **pelo menos 32 caracteres**:
+**Implemented today:** authentication and project CRUD. Tasks and per-user authorization remain outstanding.
 
-```env
-JWT_KEY=sua-chave-local-com-pelo-menos-32-caracteres
-```
+Details: [MVP Backend Scope](docs/MVP_BACKEND_SCOPE.md).
 
-> O arquivo `.env` não é versionado. Nunca commite segredos reais.
+---
 
-### 3. Subir a stack completa
+## Planned modules (future)
+
+| Module | MVP | Purpose |
+|--------|-----|---------|
+| Identity | Yes | Authentication and data isolation |
+| Projects | Yes | Containers for larger efforts |
+| Tasks | Yes | Actionable items with status and priority |
+| Inbox | No | Quick capture without immediate categorization |
+| Habits | No | Recurring actions with low-friction logging |
+| Routines | No | Reusable checklists to start or finish sequences |
+| Tracker | No | Books, courses, series, and long-running interests |
+| Lists | No | Lightweight free-form lists |
+| Calendar | No | Unified temporal view |
+| Notes | No | Markdown notes linked to resources |
+| Dashboard | No | Consolidated “Today” execution view |
+| Insights | No | Personal pattern analysis from history |
+| AI Assistance | No | Optional, transparent decision support |
+
+Roadmap and rationale: [Product Roadmap](docs/PRODUCT_ROADMAP.md).
+
+---
+
+## Confirmed stack
+
+- .NET 8, ASP.NET Core Web API
+- Entity Framework Core 8 + PostgreSQL
+- ASP.NET Core Identity + JWT Bearer
+- MediatR, FluentValidation
+- Docker, Docker Compose
+- xUnit, Moq, FluentAssertions
+
+---
+
+## Quick start
+
+**Docker (recommended):**
 
 ```powershell
 cd TaskForge
+copy .env.example .env
+# Edit .env — set JWT_KEY (at least 32 characters)
 docker compose up -d --build
 ```
 
-Isso sobe:
+Open **http://localhost:8080/swagger**.
 
-| Serviço | Container | Acesso |
-|---------|-----------|--------|
-| API + Swagger | `taskforge-api` | **http://localhost:8080/swagger** |
-| PostgreSQL | `taskforge-postgres` | `localhost:5432` |
-| Portainer (UI) | `taskforge-portainer` | **http://localhost:9000** |
-
-A API aplica as **migrations automaticamente** na inicialização (`ApplyMigrationsOnStartup`).
-
-Verifique o status:
-
-```powershell
-docker compose ps
-docker compose logs api
-```
-
-Parar tudo:
-
-```powershell
-docker compose down
-```
-
-Remover volumes (apaga o banco):
-
-```powershell
-docker compose down -v
-```
-
-### 4. Testar no Swagger
-
-Abra **http://localhost:8080/swagger** e siga o [fluxo manual](#fluxo-manual-da-api-swagger).
-
-### 5. Portainer
-
-Abra **http://localhost:9000**, crie o usuário admin na primeira visita e selecione o ambiente **local**. Você verá os containers `taskforge-api`, `taskforge-postgres` e `taskforge-portainer`.
-
----
-
-## Docker no Windows (sem Desktop)
-
-O TaskForge **precisa de um engine Docker**. O **Portainer** é apenas a interface web — **não substitui** o Docker.
-
-### Opção recomendada: Docker Engine no WSL2
-
-1. **Habilite o WSL2** (PowerShell como administrador):
-
-   ```powershell
-   wsl --install
-   ```
-
-2. **Dentro do Ubuntu (WSL)**:
-
-   ```bash
-   sudo apt update
-   sudo apt install -y docker.io docker-compose-v2
-   sudo usermod -aG docker $USER
-   ```
-
-   Feche e reabra o terminal WSL. Verifique: `docker --version` e `docker compose version`.
-
-3. Execute os comandos de [Deploy local com Docker](#deploy-local-com-docker-recomendado) a partir da pasta do projeto.
-
-### Alternativa
-
-[Docker Desktop](https://www.docker.com/products/docker-desktop/) — mais simples, porém mais pesado.
-
----
-
-## Desenvolvimento .NET local (opcional)
-
-Use este fluxo se quiser depurar código no Visual Studio / VS Code com `dotnet run`, mantendo o banco no Docker.
-
-### 1. Ferramentas e JWT
+**Local .NET development:**
 
 ```powershell
 dotnet tool restore
 dotnet user-secrets set "Jwt:Key" "TaskForge-Local-Dev-Secret-Key-32chars!" --project TaskForge.Api
-```
-
-### 2. Subir só a infraestrutura (PostgreSQL + Portainer)
-
-```powershell
-cd TaskForge
-docker compose up -d postgres portainer
-```
-
-### 3. Migrations e API
-
-```powershell
+docker compose up -d postgres
 dotnet ef database update --project TaskForge.Infrastructure --startup-project TaskForge.Api
-cd TaskForge.Api
-dotnet run
+dotnet run --project TaskForge.Api
 ```
 
-Swagger local: `https://localhost:7294/swagger` ou `http://localhost:5062/swagger`
-
-### 4. Testes
-
-```powershell
-dotnet test TaskForge.sln
-```
+Full setup, configuration keys, health checks, and API reference: [Technical Overview](docs/TECHNICAL_OVERVIEW.md).
 
 ---
 
-## Fluxo manual da API (Swagger)
+## Documentation
 
-1. Abra o Swagger (`http://localhost:8080/swagger` no Docker, ou porta local do `dotnet run`).
-2. **Registrar** — `POST /api/auth/register`:
-
-   ```json
-   {
-     "fullName": "Usuário Demo",
-     "email": "demo@taskforge.local",
-     "password": "Demo123"
-   }
-   ```
-
-3. **Login** — `POST /api/auth/login`:
-
-   ```json
-   {
-     "email": "demo@taskforge.local",
-     "password": "Demo123"
-   }
-   ```
-
-   Copie o `token`.
-
-4. **Autorizar** — clique em **Authorize** → `Bearer {token}`.
-5. **Criar projeto** — `POST /api/projects`:
-
-   ```json
-   {
-     "name": "Meu Primeiro Projeto",
-     "description": "Demonstração do portfólio"
-   }
-   ```
-
-6. **Listar** — `GET /api/projects`
-7. **Buscar** — `GET /api/projects/{id}`
-8. **Atualizar** — `PUT /api/projects/{id}`
-9. **Excluir** — `DELETE /api/projects/{id}`
+| Document | Description |
+|----------|-------------|
+| [Product Roadmap](docs/PRODUCT_ROADMAP.md) | Long-term vision, modules, and evolution order |
+| [MVP Backend Scope](docs/MVP_BACKEND_SCOPE.md) | Exact MVP requirements and acceptance criteria |
+| [Technical Overview](docs/TECHNICAL_OVERVIEW.md) | Repository structure, endpoints, and configuration |
+| [Implementation Status](docs/IMPLEMENTATION_STATUS.md) | Verifiable progress tables and percentages |
 
 ---
 
-## Referência de configuração
+## Out of scope for now
 
-| Chave | Docker (`.env`) | Local (`dotnet run`) |
-|-------|-----------------|----------------------|
-| JWT | `JWT_KEY` → `Jwt__Key` | User Secrets / `Jwt__Key` |
-| Banco | automático via compose | `ConnectionStrings:Default` em `appsettings.json` |
-| Swagger no container | `EnableSwagger=true` | `ASPNETCORE_ENVIRONMENT=Development` |
-| Migrations automáticas | `ApplyMigrationsOnStartup=true` | `dotnet ef database update` manual |
-
-Credenciais PostgreSQL padrão (somente dev local): `postgres` / `postgres` / `taskforge_db`.
+Frontend, Inbox, habits, routines, Tracker, lists, calendar, notes, dashboard, insights, AI, multi-user collaboration, notifications, gamification, microservices, refresh tokens, complex roles, and full CI/CD are **roadmap items only** — not part of the current MVP.
 
 ---
 
-## Health checks
+## License
 
-- Liveness: `GET /health/live`
-- Readiness (PostgreSQL): `GET /health/ready`
-
-No Docker: `http://localhost:8080/health/ready`
-
----
-
-## Arquitetura
-
-```
-TaskForge.Domain → TaskForge.Application → TaskForge.Infrastructure → TaskForge.Api
-```
-
-Arquivos de deploy: `Dockerfile`, `docker-compose.yml`, `.env.example` na raiz da solution.
-
----
-
-## Tecnologias
-
-- .NET 8, ASP.NET Core Web API, Docker
-- Entity Framework Core 8 + PostgreSQL
-- ASP.NET Core Identity + JWT Bearer
-- MediatR, FluentValidation
-- xUnit, Moq, FluentAssertions
+See repository license information if applicable.

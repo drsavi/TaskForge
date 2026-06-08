@@ -1,6 +1,12 @@
 # TaskForge
 
-> **Versão em português:** [readme.md](readme.md)
+> **This file has been superseded.** The canonical English README is **[README.md](README.md)**.
+>
+> **Português (Brasil):** [README.pt-BR.md](README.pt-BR.md)
+
+---
+
+> Legacy deployment documentation below. For product vision, MVP scope, and current status, use the links above and the [docs/](docs/) folder.
 
 Portfolio-grade .NET Web API for project management with JWT authentication, Clean Architecture, and CQRS via MediatR.
 
@@ -205,8 +211,33 @@ Default PostgreSQL credentials (local dev only): `postgres` / `postgres` / `task
 
 ## Health checks
 
-- Liveness: `GET /health/live`
-- Readiness (PostgreSQL): `GET /health/ready`
+Public endpoints (no JWT), documented in Swagger under **Health**:
+
+| Endpoint | Purpose | Healthy HTTP | Failure HTTP |
+|----------|---------|--------------|--------------|
+| `GET /health/live` | **Liveness** — is the API process running? | 200 | — |
+| `GET /health/ready` | **Readiness** — API + PostgreSQL ready for traffic? | 200 | 503 |
+
+Example response (`GET /health/ready` healthy):
+
+```json
+{
+  "endpoint": "ready",
+  "purpose": "Readiness",
+  "description": "Confirma que a API e suas dependências críticas estão prontas para atender requisições.",
+  "status": "Healthy",
+  "summary": "A aplicação está pronta. Todas as dependências verificadas estão saudáveis.",
+  "dependencies": [
+    {
+      "name": "postgresql",
+      "purpose": "Verifica conexão e consulta básica ao PostgreSQL.",
+      "status": "Healthy",
+      "error": null
+    }
+  ],
+  "checkedAtUtc": "2026-06-03T12:00:00+00:00"
+}
+```
 
 In Docker: `http://localhost:8080/health/ready`
 

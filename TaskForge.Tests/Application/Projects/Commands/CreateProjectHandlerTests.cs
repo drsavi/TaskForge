@@ -59,7 +59,6 @@ namespace TaskForge.Application.Tests.Projects.Commands
         [Fact]
         public async Task Handle_WithoutDescription_ShouldCreateProjectWithNullDescription()
         {
-            // Arrange
             var command = new CreateProjectCommand("No Description Project", null);
             Project? capturedProject = null;
 
