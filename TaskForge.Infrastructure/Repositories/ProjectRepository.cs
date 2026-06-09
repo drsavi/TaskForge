@@ -10,25 +10,28 @@ namespace TaskForge.Infrastructure.Repositories
         private readonly TaskForgeDbContext _context;
         public ProjectRepository(TaskForgeDbContext context) => _context = context;
 
-        public async Task<IEnumerable<Project>> GetAllAsync(CancellationToken cancellationtoken)
-            => await _context.Projects.ToListAsync(cancellationtoken);
+        public async Task<IEnumerable<Project>> GetAllForOwnerAsync(string ownerId, CancellationToken cancellationToken)
+            => await _context.Projects
+                .Where(p => p.OwnerId == ownerId)
+                .ToListAsync(cancellationToken);
 
-        public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationtoken)
-            => await _context.Projects.FindAsync([id], cancellationtoken);
+        public async Task<Project?> GetByIdForOwnerAsync(Guid id, string ownerId, CancellationToken cancellationToken)
+            => await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == ownerId, cancellationToken);
 
-        public async Task AddAsync(Project project, CancellationToken cancellationtoken)
+        public async Task AddAsync(Project project, CancellationToken cancellationToken)
         {
-            await _context.Projects.AddAsync(project, cancellationtoken);
-            await _context.SaveChangesAsync(cancellationtoken);
+            await _context.Projects.AddAsync(project, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
-        public async Task UpdateAsync(Project project, CancellationToken cancellationtoken)
-            => await _context.SaveChangesAsync(cancellationtoken);
+        public async Task UpdateAsync(Project project, CancellationToken cancellationToken)
+            => await _context.SaveChangesAsync(cancellationToken);
 
-        public async Task DeleteAsync(Project project, CancellationToken cancellationtoken)
+        public async Task DeleteAsync(Project project, CancellationToken cancellationToken)
         {
             _context.Projects.Remove(project);
-            await _context.SaveChangesAsync(cancellationtoken);
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

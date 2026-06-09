@@ -10,13 +10,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TaskForge.Application.Common.Behaviors;
 using TaskForge.Application.Common.Validators;
 using TaskForge.Application.Interfaces.Repositories;
+using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Projects.Commands.CreateProject;
 using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
 using TaskForge.Infrastructure.Repositories;
+using TaskForge.Infrastructure.Services;
 
 const string JwtKeyMissingMessage =
     "Jwt:Key is not configured. Options:\n" +
@@ -84,10 +87,19 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
 
 builder.Services
   .AddControllers()
+  .AddJsonOptions(opts =>
+  {
+      opts.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+      opts.JsonSerializerOptions.WriteIndented = true;
+      opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+  })
   .ConfigureApiBehaviorOptions(opts =>
   {
       opts.InvalidModelStateResponseFactory = context =>
@@ -157,6 +169,7 @@ builder.Services.Configure<JsonSerializerOptions>(options =>
 {
     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     options.WriteIndented = true;
+    options.Converters.Add(new JsonStringEnumConverter());
 });
 
 builder.Services.AddHealthChecks()
@@ -219,6 +232,17 @@ app.UseExceptionHandler(errApp =>
             {
                 Title = ex?.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+            return;
+        }
+
+        if (ex is UnauthorizedAccessException)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Title = ex?.Message,
+                Status = StatusCodes.Status403Forbidden
             });
             return;
         }

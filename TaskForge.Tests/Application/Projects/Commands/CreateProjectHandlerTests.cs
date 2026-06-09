@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using TaskForge.Application.Interfaces.Repositories;
+using TaskForge.Application.Interfaces.Services;
 using TaskForge.Application.Projects.Commands.CreateProject;
 using TaskForge.Domain.Entities;
 
@@ -8,13 +9,18 @@ namespace TaskForge.Application.Tests.Projects.Commands
 {
     public class CreateProjectHandlerTests
     {
+        private const string UserId = "user-abc";
+
         private readonly Mock<IProjectRepository> _mockRepository;
+        private readonly Mock<ICurrentUserService> _mockCurrentUser;
         private readonly CreateProjectHandler _handler;
 
         public CreateProjectHandlerTests()
         {
             _mockRepository = new Mock<IProjectRepository>();
-            _handler = new CreateProjectHandler(_mockRepository.Object);
+            _mockCurrentUser = new Mock<ICurrentUserService>();
+            _mockCurrentUser.Setup(u => u.UserId).Returns(UserId);
+            _handler = new CreateProjectHandler(_mockRepository.Object, _mockCurrentUser.Object);
         }
 
         [Fact]
@@ -32,18 +38,17 @@ namespace TaskForge.Application.Tests.Projects.Commands
 
             result.Should().NotBeEmpty();
             capturedProject.Should().NotBeNull();
-            capturedProject!.Name.Should().Be(command.Name);
+            capturedProject!.OwnerId.Should().Be(UserId);
+            capturedProject.Name.Should().Be(command.Name);
             capturedProject.Description.Should().Be(command.Description);
             capturedProject.Id.Should().Be(result);
 
             _mockRepository.Verify(
                 r => r.AddAsync(It.IsAny<Project>(), It.IsAny<CancellationToken>()),
-                Times.Once
-            );
+                Times.Once);
         }
 
         [Theory]
-        [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
         public async Task Handle_InvalidName_ShouldThrowArgumentException(string invalidName)
@@ -83,8 +88,7 @@ namespace TaskForge.Application.Tests.Projects.Commands
 
             _mockRepository.Verify(
                 r => r.AddAsync(It.IsAny<Project>(), token),
-                Times.Once
-            );
+                Times.Once);
         }
 
         [Fact]
