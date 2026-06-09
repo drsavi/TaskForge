@@ -154,6 +154,7 @@ Configuração completa, chaves, health checks e referência da API: [Visão Té
 | [Escopo do MVP do Backend](docs/MVP_BACKEND_SCOPE.pt-BR.md) | Requisitos exatos do MVP e critérios de aceite |
 | [Visão Técnica](docs/TECHNICAL_OVERVIEW.pt-BR.md) | Estrutura do repositório, endpoints e configuração |
 | [Status de Implementação](docs/IMPLEMENTATION_STATUS.pt-BR.md) | Tabelas de progresso verificável e percentuais |
+| [Fluxo Git](docs/GIT_WORKFLOW.pt-BR.md) | Nome de branches, convenção de commits e fluxo de merge |
 
 ---
 

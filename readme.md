@@ -154,6 +154,7 @@ Full setup, configuration keys, health checks, and API reference: [Technical Ove
 | [MVP Backend Scope](docs/MVP_BACKEND_SCOPE.md) | Exact MVP requirements and acceptance criteria |
 | [Technical Overview](docs/TECHNICAL_OVERVIEW.md) | Repository structure, endpoints, and configuration |
 | [Implementation Status](docs/IMPLEMENTATION_STATUS.md) | Verifiable progress tables and percentages |
+| [Git Workflow](docs/GIT_WORKFLOW.md) | Branch naming, commit conventions, and merge flow |
 
 ---
 
