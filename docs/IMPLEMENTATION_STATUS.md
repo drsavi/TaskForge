@@ -4,7 +4,7 @@
 
 Progress is calculated only from **verifiable checklist items**. Partial items count as 0 in the main percentage. Formula: `completed / total × 100`, rounded to nearest integer.
 
-**Last verified:** 2026-06-08 — code review + `dotnet test` (28 passed) + manual acceptance scenario (12/12).
+**Last verified:** 2026-06-07 — GIT_WORKFLOW documentation added; MVP verified 2026-06-08 (`dotnet test` 28 passed, acceptance 12/12).
 
 ---
 
@@ -17,7 +17,7 @@ Progress is calculated only from **verifiable checklist items**. Partial items c
 | **MVP — Tasks** | 13 | 14 | **93%** |
 | **MVP — Infrastructure** | 11 | 11 | **100%** |
 | **MVP overall** (Identity + Projects + Tasks + Infrastructure) | 42 | 45 | **93%** |
-| **Documentation** | 10 | 10 | **100%** |
+| **Documentation** | 12 | 12 | **100%** |
 | **Tests** | 5 | 8 | **63%** |
 
 ---
@@ -121,7 +121,8 @@ Progress is calculated only from **verifiable checklist items**. Partial items c
 | Docs | TECHNICAL_OVERVIEW EN/PT | Implemented | 100% | `docs/TECHNICAL_OVERVIEW*.md` | Yes | — |
 | Docs | MVP_BACKEND_SCOPE EN/PT | Implemented | 100% | `docs/MVP_BACKEND_SCOPE*.md` | Yes | — |
 | Docs | PRODUCT_ROADMAP EN/PT | Implemented | 100% | `docs/PRODUCT_ROADMAP*.md` | Yes | — |
-| Docs | IMPLEMENTATION_STATUS EN/PT | Implemented | 100% | This file | Yes | Updated 2026-06-08 |
+| Docs | GIT_WORKFLOW EN/PT | Implemented | 100% | `docs/GIT_WORKFLOW*.md` | Yes | Branches, commits, merge flow |
+| Docs | IMPLEMENTATION_STATUS EN/PT | Implemented | 100% | This file | Yes | Updated 2026-06-07 |
 
 ---
 
