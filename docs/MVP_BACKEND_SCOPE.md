@@ -133,8 +133,9 @@ High
 
 | Method | Route | Current state |
 |--------|-------|---------------|
-| POST | `/api/auth/register` | **Implemented** |
-| POST | `/api/auth/login` | **Implemented** |
+| POST | `/api/users` | **Implemented** |
+| POST | `/api/sessions` | **Implemented** |
+| GET | `/api/users/me` | **Implemented** |
 
 ### 5.2 Projects
 

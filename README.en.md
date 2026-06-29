@@ -158,7 +158,7 @@ dotnet test TaskForge.sln
 ## Manual API flow (Swagger)
 
 1. Open Swagger (`http://localhost:8080/swagger` in Docker, or local `dotnet run` port).
-2. **Register** — `POST /api/auth/register`:
+2. **Register** — `POST /api/users`:
 
    ```json
    {
@@ -168,7 +168,17 @@ dotnet test TaskForge.sln
    }
    ```
 
-3. **Login** — `POST /api/auth/login`:
+   Response `201 Created`:
+
+   ```json
+   {
+     "id": "...",
+     "email": "demo@taskforge.local",
+     "fullName": "Demo User"
+   }
+   ```
+
+3. **Login** — `POST /api/sessions`:
 
    ```json
    {
@@ -177,9 +187,19 @@ dotnet test TaskForge.sln
    }
    ```
 
-   Copy the `token`.
+   Response `201 Created`:
 
-4. **Authorize** — click **Authorize** → `Bearer {token}`.
+   ```json
+   {
+     "accessToken": "eyJ...",
+     "tokenType": "Bearer",
+     "expiresIn": 3600
+   }
+   ```
+
+   Copy the `accessToken`.
+
+4. **Authorize** — click **Authorize** → `Bearer {accessToken}`.
 5. **Create project** — `POST /api/projects`:
 
    ```json

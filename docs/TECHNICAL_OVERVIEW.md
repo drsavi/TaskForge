@@ -52,7 +52,7 @@ Domain ← Application ← Infrastructure ← Api
 
 ### API (`TaskForge.Api`)
 
-- Controllers: `AuthController`, `ProjectsController`, `HealthController`.
+- Controllers: `UsersController`, `SessionsController`, `ProjectsController`, `HealthController`.
 - JWT and Identity configuration in `Program.cs`.
 - Swagger, health checks, global exception handler.
 
@@ -91,7 +91,7 @@ HTTP Request
   → PostgreSQL
 ```
 
-Auth bypasses MediatR — `AuthController` uses `UserManager` / `SignInManager` directly.
+Auth bypasses MediatR — `UsersController` and `SessionsController` use `UserManager` / `SignInManager` directly.
 
 ---
 
@@ -157,12 +157,13 @@ When `ApplyMigrationsOnStartup=true` (Docker default), migrations run on startup
 
 ## 8. Existing endpoints
 
-### Authentication (`AuthController`)
+### Authentication (`UsersController`, `SessionsController`)
 
 | Method | Route | Auth |
 |--------|-------|------|
-| POST | `/api/auth/register` | Anonymous |
-| POST | `/api/auth/login` | Anonymous |
+| POST | `/api/users` | Anonymous |
+| POST | `/api/sessions` | Anonymous |
+| GET | `/api/users/me` | JWT required |
 
 ### Projects (`ProjectsController`)
 

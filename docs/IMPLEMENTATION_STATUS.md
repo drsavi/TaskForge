@@ -26,10 +26,11 @@ Progress is calculated only from **verifiable checklist items**. Partial items c
 
 | Area | Feature | Status | Progress | Evidence | In current MVP | Notes |
 |------|---------|--------|----------|----------|----------------|-------|
-| Identity | Register endpoint | Implemented | 88% | `AuthController.Register` | Yes | Returns 400 on Identity errors |
-| Identity | Login endpoint | Implemented | 88% | `AuthController.Login` | Yes | Returns JWT `{ token }` |
+| Identity | Register endpoint | Implemented | 90% | `UsersController.Register` | Yes | Returns 201 + `UserDto` |
+| Identity | Login endpoint | Implemented | 90% | `SessionsController.Create` | Yes | Returns 201 + `SessionDto` |
 | Identity | Password hashing via Identity | Implemented | 88% | `UserManager.CreateAsync` | Yes | Digit + non-alphanumeric required |
-| Identity | JWT generation | Implemented | 88% | `AuthController.GenerateJwt` | Yes | Claims: sub, email |
+| Identity | JWT generation | Implemented | 90% | `JwtTokenService` | Yes | Claims: sub, email |
+| Identity | Current user endpoint | Implemented | 90% | `UsersController.GetMe` | Yes | Requires JWT |
 | Identity | JWT validation | Implemented | 88% | `Program.cs` AddJwtBearer | Yes | Issuer, audience, lifetime |
 | Identity | Current user in business logic | Implemented | 88% | `ICurrentUserService` in handlers | Yes | `ClaimTypes.NameIdentifier` |
 | Identity | Swagger Bearer auth | Implemented | 88% | `Program.cs` AddSecurityDefinition | Yes | — |

@@ -133,8 +133,9 @@ High
 
 | Método | Rota | Estado atual |
 |--------|------|--------------|
-| POST | `/api/auth/register` | **Implementado** |
-| POST | `/api/auth/login` | **Implementado** |
+| POST | `/api/users` | **Implementado** |
+| POST | `/api/sessions` | **Implementado** |
+| GET | `/api/users/me` | **Implementado** |
 
 ### 5.2 Projetos
 

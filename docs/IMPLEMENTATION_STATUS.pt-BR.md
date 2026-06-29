@@ -26,10 +26,11 @@ O progresso é calculado apenas a partir de **itens verificáveis em checklist**
 
 | Área | Funcionalidade | Status | Progresso | Evidência | No MVP atual | Observações |
 |------|----------------|--------|-----------|-----------|--------------|-------------|
-| Identity | Endpoint de registro | Implementado | 88% | `AuthController.Register` | Sim | Retorna 400 em erros do Identity |
-| Identity | Endpoint de login | Implementado | 88% | `AuthController.Login` | Sim | Retorna JWT `{ token }` |
+| Identity | Endpoint de registro | Implementado | 90% | `UsersController.Register` | Sim | Retorna 201 + `UserDto` |
+| Identity | Endpoint de login | Implementado | 90% | `SessionsController.Create` | Sim | Retorna 201 + `SessionDto` |
 | Identity | Hash de senha via Identity | Implementado | 88% | `UserManager.CreateAsync` | Sim | Dígito + não alfanumérico obrigatórios |
-| Identity | Geração de JWT | Implementado | 88% | `AuthController.GenerateJwt` | Sim | Claims: sub, email |
+| Identity | Geração de JWT | Implementado | 90% | `JwtTokenService` | Sim | Claims: sub, email |
+| Identity | Endpoint do usuário atual | Implementado | 90% | `UsersController.GetMe` | Sim | Exige JWT |
 | Identity | Validação de JWT | Implementado | 88% | `Program.cs` AddJwtBearer | Sim | Issuer, audience, lifetime |
 | Identity | Usuário atual na lógica de negócio | Implementado | 88% | `ICurrentUserService` nos handlers | Sim | `ClaimTypes.NameIdentifier` |
 | Identity | Swagger Bearer auth | Implementado | 88% | `Program.cs` AddSecurityDefinition | Sim | — |

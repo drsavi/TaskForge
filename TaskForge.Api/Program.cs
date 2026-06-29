@@ -20,6 +20,7 @@ using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
 using TaskForge.Infrastructure.Repositories;
 using TaskForge.Infrastructure.Services;
+using TaskForge.Api.Services;
 
 const string JwtKeyMissingMessage =
     "Jwt:Key is not configured. Options:\n" +
@@ -89,6 +90,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
 
