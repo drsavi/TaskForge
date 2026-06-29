@@ -20,6 +20,8 @@ using TaskForge.Infrastructure.Data;
 using TaskForge.Infrastructure.Identity;
 using TaskForge.Infrastructure.Repositories;
 using TaskForge.Infrastructure.Services;
+using TaskForge.Api.Constants;
+using TaskForge.Api.Infrastructure;
 using TaskForge.Api.Services;
 
 const string JwtKeyMissingMessage =
@@ -86,6 +88,29 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+
+            if (context.Response.HasStarted)
+                return;
+
+            await ProblemDetailsResponseWriter.WriteAsync(
+                context.HttpContext,
+                StatusCodes.Status401Unauthorized,
+                new ProblemDetails
+                {
+                    Title = "Unauthorized.",
+                    Status = StatusCodes.Status401Unauthorized,
+                    Detail = string.IsNullOrWhiteSpace(context.ErrorDescription)
+                        ? "Authentication is required."
+                        : context.ErrorDescription
+                });
+        }
+    };
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -119,7 +144,9 @@ builder.Services
               Status = StatusCodes.Status400BadRequest
           };
 
-          return new BadRequestObjectResult(details);
+          return ProblemDetailsResponseWriter.ProblemResult(
+              StatusCodes.Status400BadRequest,
+              details);
       };
   });
 
@@ -222,40 +249,52 @@ app.UseExceptionHandler(errApp =>
                    g => g.Select(e => e.ErrorMessage).ToArray()
                );
 
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsJsonAsync(new ValidationProblemDetails(errors));
+            await ProblemDetailsResponseWriter.WriteAsync(
+                context,
+                StatusCodes.Status400BadRequest,
+                new ValidationProblemDetails(errors)
+                {
+                    Title = "Validation failed",
+                    Status = StatusCodes.Status400BadRequest
+                });
             return;
         }
 
         if (ex is KeyNotFoundException)
         {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            await context.Response.WriteAsJsonAsync(new ProblemDetails
-            {
-                Title = ex?.Message,
-                Status = StatusCodes.Status404NotFound
-            });
+            await ProblemDetailsResponseWriter.WriteAsync(
+                context,
+                StatusCodes.Status404NotFound,
+                new ProblemDetails
+                {
+                    Title = ex?.Message,
+                    Status = StatusCodes.Status404NotFound
+                });
             return;
         }
 
         if (ex is UnauthorizedAccessException)
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            await context.Response.WriteAsJsonAsync(new ProblemDetails
-            {
-                Title = ex?.Message,
-                Status = StatusCodes.Status403Forbidden
-            });
+            await ProblemDetailsResponseWriter.WriteAsync(
+                context,
+                StatusCodes.Status403Forbidden,
+                new ProblemDetails
+                {
+                    Title = ex?.Message,
+                    Status = StatusCodes.Status403Forbidden
+                });
             return;
         }
 
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        await context.Response.WriteAsJsonAsync(new ProblemDetails
-        {
-            Title = "An unexpected error occurred.",
-            Status = StatusCodes.Status500InternalServerError,
-            Detail = ex?.Message
-        });
+        await ProblemDetailsResponseWriter.WriteAsync(
+            context,
+            StatusCodes.Status500InternalServerError,
+            new ProblemDetails
+            {
+                Title = "An unexpected error occurred.",
+                Status = StatusCodes.Status500InternalServerError,
+                Detail = ex?.Message
+            });
     });
 });
 

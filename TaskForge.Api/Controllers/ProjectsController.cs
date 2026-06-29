@@ -12,19 +12,20 @@ using TaskForge.Application.Projects.Queries.GetProjectById;
 namespace TaskForge.Api.Controllers
 {
     [Authorize]
-    [ApiController]
     [Route("api/[controller]")]
-    public class ProjectsController(IMediator mediator) : ControllerBase
+    public class ProjectsController(IMediator mediator) : ApiControllerBase
     {
         private readonly IMediator _mediator = mediator;
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ProjectDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll(CancellationToken cancellationToken)
         {
             return Ok(await _mediator.Send(new GetAllProjectsQuery(), cancellationToken));
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(ProjectDto), StatusCodes.Status201Created)]
         public async Task<ActionResult<ProjectDto>> Create(CreateProjectRequest req)
         {
             var id = await _mediator.Send(new CreateProjectCommand(req.Name, req.Description));
@@ -33,6 +34,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpGet(RouteConstants.Id)]
+        [ProducesResponseType(typeof(ProjectDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<ProjectDto>> GetById(Guid id, CancellationToken cancellationToken)
         {
             var dto = await _mediator.Send(new GetProjectByIdQuery(id), cancellationToken);
@@ -44,6 +46,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpPut(RouteConstants.Id)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Update(Guid id, UpdateProjectDto dto, CancellationToken cancellationtoken)
         {
             var success = await _mediator.Send(new UpdateProjectCommand(id, dto.Name, dto.Description), cancellationtoken);
@@ -54,6 +57,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpDelete(RouteConstants.Id)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             var success = await _mediator.Send(new DeleteProjectCommand(id), cancellationToken);

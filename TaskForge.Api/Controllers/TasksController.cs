@@ -12,13 +12,13 @@ using TaskForge.Domain.Enums;
 namespace TaskForge.Api.Controllers
 {
     [Authorize]
-    [ApiController]
     [Route("api/projects/{projectId:guid}/tasks")]
-    public class TasksController(IMediator mediator) : ControllerBase
+    public class TasksController(IMediator mediator) : ApiControllerBase
     {
         private readonly IMediator _mediator = mediator;
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<TaskItemDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAll(
             Guid projectId,
             [FromQuery] TaskItemStatus? status,
@@ -31,6 +31,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(TaskItemDto), StatusCodes.Status201Created)]
         public async Task<ActionResult<TaskItemDto>> Create(
             Guid projectId,
             CreateTaskRequest req,
@@ -47,6 +48,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpGet("{taskId:guid}")]
+        [ProducesResponseType(typeof(TaskItemDto), StatusCodes.Status200OK)]
         public async Task<ActionResult<TaskItemDto>> GetById(
             Guid projectId,
             Guid taskId,
@@ -61,6 +63,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpPut("{taskId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Update(
             Guid projectId,
             Guid taskId,
@@ -85,6 +88,7 @@ namespace TaskForge.Api.Controllers
         }
 
         [HttpDelete("{taskId:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Delete(
             Guid projectId,
             Guid taskId,

@@ -1,22 +1,21 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using TaskForge.Api.Infrastructure;
 using TaskForge.Application.Dtos;
 using TaskForge.Application.Interfaces.Services;
 using TaskForge.Infrastructure.Identity;
 
 namespace TaskForge.Api.Controllers
 {
-    [ApiController]
     [Route("api/users")]
     public class UsersController(
         UserManager<ApplicationUser> userManager,
-        ICurrentUserService currentUserService) : ControllerBase
+        ICurrentUserService currentUserService) : ApiControllerBase
     {
         [HttpPost]
         [AllowAnonymous]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserDto>> Register(RegisterUserRequest request)
         {
             var user = new ApplicationUser
@@ -34,11 +33,13 @@ namespace TaskForge.Api.Controllers
                     ["identity"] = result.Errors.Select(e => e.Description).ToArray()
                 };
 
-                return ValidationProblem(new ValidationProblemDetails(errors)
-                {
-                    Title = "Registration failed",
-                    Status = StatusCodes.Status400BadRequest
-                });
+                return ProblemDetailsResponseWriter.ProblemResult(
+                    StatusCodes.Status400BadRequest,
+                    new ValidationProblemDetails(errors)
+                    {
+                        Title = "Registration failed",
+                        Status = StatusCodes.Status400BadRequest
+                    });
             }
 
             var dto = ToDto(user);
@@ -48,8 +49,6 @@ namespace TaskForge.Api.Controllers
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> GetMe(CancellationToken cancellationToken)
         {
             var user = await userManager.FindByIdAsync(currentUserService.UserId);

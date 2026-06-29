@@ -9,12 +9,10 @@ namespace TaskForge.Api.Controllers
     /// Endpoints operacionais para monitoramento da API (liveness e readiness).
     /// Não exigem autenticação — usados por Docker, Kubernetes e ferramentas de observabilidade.
     /// </summary>
-    [ApiController]
     [Route("health")]
     [AllowAnonymous]
     [Tags("Health")]
-    [Produces("application/json")]
-    public class HealthController(HealthCheckService healthCheckService) : ControllerBase
+    public class HealthController(HealthCheckService healthCheckService) : ApiControllerBase
     {
         private readonly HealthCheckService _healthCheckService = healthCheckService;
 
