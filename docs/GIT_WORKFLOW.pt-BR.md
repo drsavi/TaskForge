@@ -128,11 +128,11 @@ feature branch  →  devel  →  master
 
 ### Passo a passo
 
-**1. Criar a feature branch** (a partir de `master`):
+**1. Criar a feature branch** (a partir de `devel`):
 
 ```powershell
-git checkout master
-git pull origin master
+git checkout devel
+git pull origin devel
 git checkout -b 2026-06-08-mvp
 ```
 
